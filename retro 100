@@ -1,0 +1,2224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Green Floor Texture Builder</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
+      font-family: Arial, sans-serif;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      touch-action: none;
+    }
+
+    .hud {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      background: rgba(0,0,0,0.25);
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      letter-spacing: 0.05em;
+      pointer-events: none;
+      text-align: center;
+      backdrop-filter: blur(4px);
+    }
+
+    .status-hud {
+      position: absolute;
+      top: 58px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.3);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      pointer-events: none;
+      z-index: 35;
+      white-space: nowrap;
+    }
+
+    .placement-panel {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 12px;
+      padding: 8px 12px;
+      color: white;
+      backdrop-filter: blur(4px);
+      pointer-events: auto;
+    }
+
+    .placement-panel label {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .placement-panel select {
+      background: rgba(255,255,255,0.10);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .resize-panel {
+      position: absolute;
+      left: 18px;
+      top: 76px;
+      z-index: 29;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      padding: 8px;
+      color: white;
+      backdrop-filter: blur(4px);
+      pointer-events: auto;
+    }
+
+    .resize-title {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .resize-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .resize-btn {
+      width: 54px;
+      height: 32px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.06);
+      color: white;
+      border-radius: 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .resize-btn:hover {
+      background: rgba(255,255,255,0.12);
+    }
+
+    .mode-toggle {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      z-index: 11;
+      background: rgba(0,0,0,0.35);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      cursor: pointer;
+      pointer-events: auto;
+      user-select: none;
+    }
+
+    .mode-toggle.play {
+      background: rgba(67, 110, 188, 0.8);
+      border-color: rgba(255,255,255,0.35);
+    }
+
+    .eraser-toggle {
+      position: absolute;
+      right: 20px;
+      top: 70px;
+      z-index: 10;
+      background: rgba(0,0,0,0.35);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      cursor: pointer;
+      pointer-events: auto;
+      user-select: none;
+    }
+
+    .eraser-toggle.active {
+      background: rgba(188, 67, 67, 0.8);
+      border-color: rgba(255,255,255,0.35);
+    }
+
+    .color-control {
+      position: absolute;
+      right: 20px;
+      top: 120px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      padding: 8px 10px;
+      color: white;
+      pointer-events: auto;
+      user-select: none;
+      backdrop-filter: blur(4px);
+    }
+
+    .color-control label {
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .color-control input[type="color"] {
+      width: 38px;
+      height: 38px;
+      border: none;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      border-radius: 10px;
+    }
+
+    .jump-button {
+      position: absolute;
+      right: 32px;
+      bottom: 180px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.32);
+      background: rgba(255,255,255,0.12);
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+      pointer-events: auto;
+      z-index: 10;
+      box-shadow: inset 0 0 18px rgba(255,255,255,0.05);
+    }
+
+    .joystick {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 2px solid rgba(255,255,255,0.22);
+      bottom: 28px;
+      left: 28px;
+      pointer-events: none;
+      box-shadow: inset 0 0 18px rgba(255,255,255,0.05);
+    }
+
+    .joystick .stick {
+      position: absolute;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border: 2px solid rgba(255,255,255,0.35);
+      pointer-events: none;
+    }
+
+    .lookPad {
+      position: absolute;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      right: 28px;
+      bottom: 28px;
+      background: rgba(255,255,255,0.04);
+      border: 2px solid rgba(255,255,255,0.18);
+      pointer-events: none;
+      box-shadow: inset 0 0 18px rgba(255,255,255,0.04);
+    }
+
+    .lookPad .dot {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border: 2px solid rgba(255,255,255,0.35);
+      pointer-events: none;
+    }
+
+    .player-hp-panel {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 12px;
+      background: rgba(0,0,0,0.32);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 12px;
+      z-index: 25;
+      pointer-events: none;
+      color: white;
+      backdrop-filter: blur(4px);
+    }
+
+    .player-hp-label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.88);
+      font-weight: bold;
+    }
+
+    .player-hp-bar {
+      width: 120px;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(90, 0, 0, 0.8);
+      border: 1px solid rgba(255,255,255,0.2);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .player-hp-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+      background: linear-gradient(to right, #ff5c5c, #ff2c2c);
+      border-radius: 999px;
+    }
+
+    .inventory-bar {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 18px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(4px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+      z-index: 20;
+      pointer-events: auto;
+    }
+
+    .slot {
+      width: 76px;
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .slot:hover {
+      transform: translateY(-1px);
+    }
+
+    .slot.active {
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.28);
+      box-shadow: inset 0 0 16px rgba(255,255,255,0.06);
+    }
+
+    .slot.selected {
+      border-color: #63c8ff;
+      box-shadow:
+        inset 0 0 0 2px rgba(99, 200, 255, 0.7),
+        0 0 0 2px rgba(99, 200, 255, 0.35);
+      background: rgba(255,255,255,0.10);
+    }
+
+    .slot.selected::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 2px solid rgba(99, 200, 255, 0.95);
+      border-radius: 12px;
+      pointer-events: none;
+      box-shadow: 0 0 10px rgba(99, 200, 255, 0.5);
+    }
+
+    .slot-label {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.9);
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .sword-icon {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      transform: rotate(35deg);
+      filter: drop-shadow(0 3px 4px rgba(0,0,0,0.35));
+    }
+
+    .sword-icon .blade {
+      position: absolute;
+      left: 50%;
+      top: 4px;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 22px;
+      background: linear-gradient(to bottom, #f2f6ff, #dfe8ff 55%, #9ca9c4);
+      border-radius: 2px;
+      box-shadow: inset 0 0 2px rgba(255,255,255,0.8);
+    }
+
+    .sword-icon .blade::before {
+      content: "";
+      position: absolute;
+      top: -9px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 10px;
+      height: 10px;
+      background: linear-gradient(to bottom right, #f7fbff, #cad5ea);
+      clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+    }
+
+    .sword-icon .guard {
+      position: absolute;
+      left: 50%;
+      top: 22px;
+      transform: translateX(-50%);
+      width: 26px;
+      height: 8px;
+      background: linear-gradient(to right, #d4c8a0, #f4e6b2, #d4c8a0);
+      border-radius: 3px;
+      box-shadow: inset 0 0 3px rgba(0,0,0,0.2);
+    }
+
+    .sword-icon .handle {
+      position: absolute;
+      left: 50%;
+      top: 28px;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 16px;
+      background: linear-gradient(to bottom, #6b3d23, #2a1a13);
+      border-radius: 3px;
+      box-shadow: inset 0 0 3px rgba(255,255,255,0.15);
+    }
+
+    .sword-icon .pommel {
+      position: absolute;
+      left: 50%;
+      top: 42px;
+      transform: translateX(-50%);
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #f7e7b5, #d9b85c 62%, #b3882d);
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+
+    @media (max-width: 768px) {
+      .hud {
+        font-size: 11px;
+        padding: 8px 12px;
+      }
+
+      .placement-panel {
+        top: 10px;
+        left: 10px;
+      }
+
+      .resize-panel {
+        top: 60px;
+        left: 10px;
+      }
+
+      .player-hp-panel {
+        top: 10px;
+      }
+
+      .mode-toggle, .eraser-toggle {
+        font-size: 12px;
+        padding: 8px 10px;
+      }
+
+      .color-control {
+        top: 110px;
+      }
+
+      .jump-button {
+        width: 78px;
+        height: 78px;
+        right: 24px;
+        bottom: 170px;
+        font-size: 16px;
+      }
+
+      .inventory-bar {
+        bottom: 16px;
+      }
+
+      .slot {
+        width: 64px;
+        height: 64px;
+      }
+
+      .resize-btn {
+        width: 46px;
+        height: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">Move: left stick • Look: right pad • Tap to place/remove</div>
+  <div id="statusHud" class="status-hud">Creative</div>
+
+  <div class="player-hp-panel">
+    <div class="player-hp-label">HP</div>
+    <div class="player-hp-bar">
+      <div class="player-hp-fill"></div>
+    </div>
+  </div>
+
+  <div class="placement-panel">
+    <label for="placementMode">Place</label>
+    <select id="placementMode">
+      <option value="block">Block</option>
+      <option value="lazar">Lazar</option>
+      <option value="spawn">Spawn</option>
+      <option value="zombie">Zombie</option>
+    </select>
+  </div>
+
+  <div class="resize-panel">
+    <div class="resize-title">Resize</div>
+    <div class="resize-grid">
+      <div></div>
+      <button class="resize-btn" data-axis="y" data-dir="up">Up</button>
+      <div></div>
+
+      <button class="resize-btn" data-axis="x" data-dir="left">Left</button>
+      <button class="resize-btn" data-axis="z" data-dir="back">Back</button>
+      <button class="resize-btn" data-axis="z" data-dir="forward">Fwd</button>
+
+      <div></div>
+      <button class="resize-btn" data-axis="y" data-dir="down">Down</button>
+      <div></div>
+
+      <button class="resize-btn" data-axis="x" data-dir="right">Right</button>
+      <button class="resize-btn" data-axis="y" data-dir="up">Y+</button>
+      <button class="resize-btn" data-axis="x" data-dir="left">X-</button>
+    </div>
+  </div>
+
+  <button id="modeToggle" class="mode-toggle">Play Mode: OFF</button>
+  <button id="eraserToggle" class="eraser-toggle">Eraser: OFF</button>
+
+  <div class="color-control">
+    <label for="blockColor">Block Color</label>
+    <input id="blockColor" type="color" value="#9fe085" />
+  </div>
+
+  <button id="jumpButton" class="jump-button">JUMP</button>
+
+  <div id="leftJoystick" class="joystick">
+    <div class="stick"></div>
+  </div>
+
+  <div id="lookPad" class="lookPad">
+    <div class="dot"></div>
+  </div>
+
+  <div id="inventoryBar" class="inventory-bar">
+    <div id="swordSlot" class="slot active selected">
+      <div class="sword-icon">
+        <span class="blade"></span>
+        <span class="guard"></span>
+        <span class="handle"></span>
+        <span class="pommel"></span>
+      </div>
+      <span class="slot-label">Sword</span>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js';
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x98ccff);
+    scene.fog = new THREE.Fog(0x98ccff, 18, 120);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
+    camera.rotation.order = 'YXZ';
+
+    const weapon = new THREE.Group();
+
+    const bladeMaterial = new THREE.MeshStandardMaterial({
+      color: 0xeaf1ff,
+      metalness: 0.9,
+      roughness: 0.18
+    });
+
+    const guardMaterial = new THREE.MeshStandardMaterial({
+      color: 0xd8c68a,
+      metalness: 0.8,
+      roughness: 0.35
+    });
+
+    const handleMaterial = new THREE.MeshStandardMaterial({
+      color: 0x47301d,
+      roughness: 0.9
+    });
+
+    const pommelMaterial = new THREE.MeshStandardMaterial({
+      color: 0xc69b2d,
+      metalness: 0.7,
+      roughness: 0.28
+    });
+
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.35, 0.06), bladeMaterial);
+    blade.position.y = 0.7;
+
+    const guard = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.08, 0.12), guardMaterial);
+    guard.position.y = 0.1;
+
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.45, 0.08), handleMaterial);
+    handle.position.y = -0.28;
+
+    const pommel = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.08, 12), pommelMaterial);
+    pommel.position.y = -0.56;
+
+    weapon.add(blade, guard, handle, pommel);
+    weapon.position.set(0.72, -0.58, 1.15);
+    weapon.rotation.set(0.38, 0.22, -0.9);
+    camera.add(weapon);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    const hemi = new THREE.HemisphereLight(0xdff6ff, 0x2e452d, 1.3);
+    scene.add(hemi);
+
+    const sun = new THREE.DirectionalLight(0xffffff, 1.1);
+    sun.position.set(12, 18, 8);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -60;
+    sun.shadow.camera.right = 60;
+    sun.shadow.camera.top = 60;
+    sun.shadow.camera.bottom = -60;
+    scene.add(sun);
+
+    function makeGrassTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const g = canvas.getContext('2d');
+
+      const base = '#7acb62';
+      const dark = '#4a9047';
+      const mid = '#62bc55';
+      const light = '#dff7bf';
+      const speck = '#1d3a2a';
+
+      g.fillStyle = base;
+      g.fillRect(0, 0, 256, 256);
+
+      const tile = 32;
+      for (let y = 0; y < 256; y += tile) {
+        for (let x = 0; x < 256; x += tile) {
+          g.fillStyle = (x + y) % (tile * 2) === 0 ? dark : mid;
+          g.fillRect(x, y, tile, tile);
+
+          g.fillStyle = 'rgba(255,255,255,0.12)';
+          g.fillRect(x + 4, y + 4, tile - 8, 5);
+
+          g.fillStyle = 'rgba(25,35,20,0.14)';
+          g.fillRect(x + 4, y + tile - 9, tile - 8, 5);
+
+          g.fillStyle = light;
+          g.fillRect(x + 7, y + 7, 6, 6);
+          g.fillRect(x + tile - 13, y + 7, 6, 6);
+          g.fillRect(x + 7, y + tile - 13, 6, 6);
+          g.fillRect(x + tile - 13, y + tile - 13, 6, 6);
+        }
+      }
+
+      for (let i = 0; i < 260; i++) {
+        const px = Math.random() * 256;
+        const py = Math.random() * 256;
+        g.fillStyle = i % 2 === 0 ? '#eef9d9' : speck;
+        g.fillRect(px, py, 2, 2);
+      }
+
+      return canvas;
+    }
+
+    function makeLazarTexture(colorHex) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      const g = canvas.getContext('2d');
+
+      const base = new THREE.Color(colorHex);
+      const dark = base.clone().multiplyScalar(0.25);
+      const bright = base.clone().multiplyScalar(1.25);
+
+      const glow = g.createRadialGradient(32, 32, 3, 32, 32, 30);
+      glow.addColorStop(0, `rgba(${Math.round(bright.r * 255)}, ${Math.round(bright.g * 255)}, ${Math.round(bright.b * 255)}, 1)`);
+      glow.addColorStop(0.25, `rgba(${Math.round(base.r * 255)}, ${Math.round(base.g * 255)}, ${Math.round(base.b * 255)}, 0.95)`);
+      glow.addColorStop(0.6, `rgba(${Math.round(dark.r * 255)}, ${Math.round(dark.g * 255)}, ${Math.round(dark.b * 255)}, 0.8)`);
+      glow.addColorStop(1, 'rgba(0,0,0,0.15)');
+
+      g.fillStyle = '#111827';
+      g.fillRect(0, 0, 64, 64);
+
+      g.fillStyle = glow;
+      g.fillRect(0, 0, 64, 64);
+
+      g.strokeStyle = 'rgba(255,255,255,0.5)';
+      g.lineWidth = 1.5;
+      for (let i = 0; i < 6; i++) {
+        const x = 8 + i * 8;
+        g.beginPath();
+        g.moveTo(x, 4);
+        g.lineTo(x + 6, 60);
+        g.stroke();
+      }
+
+      g.strokeStyle = 'rgba(255,255,255,0.2)';
+      for (let i = 0; i < 7; i++) {
+        const y = 8 + i * 8;
+        g.beginPath();
+        g.moveTo(0, y);
+        g.lineTo(64, y);
+        g.stroke();
+      }
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      return texture;
+    }
+
+    function createLazarMaterial(colorHex) {
+      const color = new THREE.Color(colorHex);
+      const dark = color.clone().multiplyScalar(0.4);
+      const texture = makeLazarTexture(colorHex);
+
+      return new THREE.MeshStandardMaterial({
+        map: texture,
+        color: dark,
+        emissive: color,
+        emissiveMap: texture,
+        emissiveIntensity: 1.9,
+        roughness: 0.35,
+        metalness: 0.18
+      });
+    }
+
+    function makeSpawnMarkerTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const g = canvas.getContext('2d');
+
+      g.clearRect(0, 0, 256, 256);
+
+      g.fillStyle = '#f3f3f4';
+      g.beginPath();
+      g.arc(128, 128, 96, 0, Math.PI * 2);
+      g.fill();
+
+      g.fillStyle = '#ebebed';
+      g.beginPath();
+      g.arc(128, 128, 78, 0, Math.PI * 2);
+      g.fill();
+
+      g.fillStyle = '#eaf0ff';
+      g.beginPath();
+      g.arc(128, 128, 62, 0, Math.PI * 2);
+      g.fill();
+
+      g.fillStyle = '#ef4955';
+      g.beginPath();
+      g.arc(128, 128, 42, 0, Math.PI * 2);
+      g.fill();
+
+      g.fillStyle = '#ffffff';
+      g.font = 'bold 86px Arial';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('S', 128, 128);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      return texture;
+    }
+
+    function makeSlashTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const g = canvas.getContext('2d');
+
+      g.clearRect(0, 0, 256, 256);
+
+      g.translate(128, 128);
+
+      g.strokeStyle = 'rgba(130, 216, 255, 0.95)';
+      g.lineWidth = 12;
+      g.lineCap = 'round';
+
+      g.beginPath();
+      g.moveTo(-60, -64);
+      g.quadraticCurveTo(0, 0, 70, 60);
+      g.stroke();
+
+      g.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+      g.lineWidth = 5;
+      g.beginPath();
+      g.moveTo(-52, -56);
+      g.quadraticCurveTo(0, 0, 58, 52);
+      g.stroke();
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      return texture;
+    }
+
+    const grassCanvas = makeGrassTexture();
+    const floorTexture = new THREE.CanvasTexture(grassCanvas);
+    floorTexture.wrapS = THREE.RepeatWrapping;
+    floorTexture.wrapT = THREE.RepeatWrapping;
+    floorTexture.repeat.set(18, 18);
+    floorTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+    const blockTexture = new THREE.CanvasTexture(grassCanvas);
+    blockTexture.wrapS = THREE.ClampToEdgeWrapping;
+    blockTexture.wrapT = THREE.ClampToEdgeWrapping;
+    blockTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+    const slashTexture = makeSlashTexture();
+    const slashEffectMaterial = new THREE.MeshBasicMaterial({
+      map: slashTexture,
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending
+    });
+
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(200, 200, 1, 1),
+      new THREE.MeshStandardMaterial({
+        map: floorTexture,
+        roughness: 0.95,
+        metalness: 0.04
+      })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    floor.userData.isFloor = true;
+    scene.add(floor);
+
+    const rim = new THREE.Mesh(
+      new THREE.CylinderGeometry(16.5, 16.5, 1.5, 64),
+      new THREE.MeshStandardMaterial({
+        color: 0x5e9f4d,
+        roughness: 0.98,
+        metalness: 0.06
+      })
+    );
+    rim.position.y = -0.75;
+    rim.receiveShadow = true;
+    scene.add(rim);
+
+    const blockSize = 1.0;
+    const blockHalf = blockSize / 2;
+    const slabHeight = blockSize / 2;
+    const slabHalf = slabHeight / 2;
+
+    const blockGeometry = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
+    const slabGeometry = new THREE.BoxGeometry(blockSize, slabHeight, blockSize);
+
+    const placedBlocks = [];
+    const zombies = [];
+    const zombieTemplates = [];
+    const slashEffects = [];
+
+    const player = {
+      pos: new THREE.Vector3(0, 0, 12),
+      yaw: 0,
+      pitch: 0,
+      velocityY: 0,
+      radius: 0.42,
+      height: 1.7,
+      speed: 7.5,
+      onGround: true,
+      health: 10,
+      maxHealth: 10,
+      attackCooldown: 0,
+      hitFlash: 0,
+      standingOnBlockTop: null
+    };
+
+    const playerHpFill = document.querySelector('.player-hp-fill');
+    const swordSlot = document.getElementById('swordSlot');
+    const statusHud = document.getElementById('statusHud');
+
+    let selectedTool = 'sword';
+    const SWING_DURATION = 0.22;
+    let swordSwingTimer = 0;
+
+    function setSelectedTool(tool) {
+      selectedTool = tool;
+      swordSlot.classList.toggle('selected', tool === 'sword');
+    }
+
+    swordSlot.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setSelectedTool('sword');
+    });
+
+    function updatePlayerHealthUI() {
+      const ratio = Math.max(0, player.health / player.maxHealth);
+      playerHpFill.style.width = `${ratio * 100}%`;
+    }
+
+    function setStatus(msg) {
+      statusHud.textContent = msg;
+    }
+
+    const keys = { w: false, s: false, a: false, d: false };
+    const arrowKeys = { left: false, right: false, up: false, down: false };
+
+    const jumpButton = document.getElementById('jumpButton');
+    const eraserToggle = document.getElementById('eraserToggle');
+    const modeToggle = document.getElementById('modeToggle');
+    const blockColorInput = document.getElementById('blockColor');
+    const placementModeSelect = document.getElementById('placementMode');
+    const placementPanel = document.querySelector('.placement-panel');
+
+    let eraserMode = false;
+    let playMode = false;
+    let jumpQueued = false;
+    let selectedBlockColor = blockColorInput.value;
+    let placementMode = placementModeSelect.value;
+
+    blockColorInput.addEventListener('input', (event) => {
+      selectedBlockColor = event.target.value;
+    });
+
+    placementModeSelect.addEventListener('change', () => {
+      placementMode = placementModeSelect.value;
+    });
+
+    function updateModeButton() {
+      modeToggle.textContent = playMode ? 'Play Mode: ON' : 'Play Mode: OFF';
+      modeToggle.classList.toggle('play', playMode);
+    }
+
+    function updateEraserButton() {
+      eraserToggle.textContent = eraserMode ? 'Eraser: ON' : 'Eraser: OFF';
+      eraserToggle.classList.toggle('active', eraserMode);
+    }
+
+    modeToggle.addEventListener('click', () => {
+      if (!playMode && !spawnPoint) {
+        setStatus('Need a Spawn Point');
+        return;
+      }
+
+      const enteringPlay = !playMode;
+      playMode = !playMode;
+      updateModeButton();
+
+      if (playMode) {
+        if (spawnPoint) {
+          const spawnHeight = 0.4;
+          player.pos.set(
+            spawnPoint.position.x,
+            spawnPoint.position.y + spawnHeight + 0.02,
+            spawnPoint.position.z
+          );
+          player.velocityY = 0;
+          player.onGround = true;
+          player.standingOnBlockTop = null;
+          setStatus('Spawned');
+        }
+      } else {
+        setStatus('Creative');
+      }
+
+      if (!enteringPlay) {
+        resetZombiesToSpawn();
+      }
+    });
+
+    eraserToggle.addEventListener('click', () => {
+      if (playMode) return;
+      eraserMode = !eraserMode;
+      updateEraserButton();
+    });
+
+    function queueJump() {
+      jumpQueued = true;
+    }
+
+    jumpButton.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      queueJump();
+    });
+
+    jumpButton.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      queueJump();
+    }, { passive: false });
+
+    function isInsideRect(x, y, rect) {
+      return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+    }
+
+    function isUiPointer(clientX, clientY) {
+      const leftRect = leftJoystick.getBoundingClientRect();
+      const lookRect = lookPad.getBoundingClientRect();
+      const modeRect = modeToggle.getBoundingClientRect();
+      const eraserRect = eraserToggle.getBoundingClientRect();
+      const colorRect = blockColorInput.parentElement.getBoundingClientRect();
+      const jumpRect = jumpButton.getBoundingClientRect();
+      const placeRect = placementPanel.getBoundingClientRect();
+      const resizeRect = document.querySelector('.resize-panel').getBoundingClientRect();
+
+      return (
+        isInsideRect(clientX, clientY, leftRect) ||
+        isInsideRect(clientX, clientY, lookRect) ||
+        isInsideRect(clientX, clientY, modeRect) ||
+        isInsideRect(clientX, clientY, eraserRect) ||
+        isInsideRect(clientX, clientY, colorRect) ||
+        isInsideRect(clientX, clientY, jumpRect) ||
+        isInsideRect(clientX, clientY, placeRect) ||
+        isInsideRect(clientX, clientY, resizeRect)
+      );
+    }
+
+    function updateCamera() {
+      const cameraHeight = player.standingOnBlockTop !== null ? 2.35 : 1.7;
+      camera.position.set(player.pos.x, player.pos.y + cameraHeight, player.pos.z);
+      camera.rotation.y = player.yaw;
+      camera.rotation.x = player.pitch;
+    }
+
+    function getBlockBounds(block) {
+      const size = block.userData.size || {
+        x: block.userData.isLazar ? 1 : blockSize,
+        y: block.userData.isLazar ? slabHeight : blockSize,
+        z: block.userData.isLazar ? 1 : blockSize
+      };
+
+      return {
+        hx: size.x / 2,
+        hy: size.y / 2,
+        hz: size.z / 2
+      };
+    }
+
+    function blockAABB(block) {
+      const size = block.userData.size || {
+        x: block.userData.isLazar ? 1 : blockSize,
+        y: block.userData.isLazar ? slabHeight : blockSize,
+        z: block.userData.isLazar ? 1 : blockSize
+      };
+
+      const hx = size.x / 2;
+      const hy = size.y / 2;
+      const hz = size.z / 2;
+
+      return {
+        minX: block.position.x - hx,
+        maxX: block.position.x + hx,
+        minY: block.position.y - hy,
+        maxY: block.position.y + hy,
+        minZ: block.position.z - hz,
+        maxZ: block.position.z + hz
+      };
+    }
+
+    function playerIntersectsBlockAt(x, y, z) {
+      const minX = x - player.radius;
+      const maxX = x + player.radius;
+      const minY = y;
+      const maxY = y + player.height;
+      const minZ = z - player.radius;
+      const maxZ = z + player.radius;
+
+      for (const block of placedBlocks) {
+        const b = blockAABB(block);
+
+        const isOnTopOfThisBlock =
+          y + player.height <= b.maxY + 0.15 &&
+          y + player.height >= b.maxY - 0.3 &&
+          y <= b.maxY;
+
+        if (isOnTopOfThisBlock) continue;
+
+        const xOverlap = maxX > b.minX && minX < b.maxX;
+        const yOverlap = maxY > b.minY && minY < b.maxY;
+        const zOverlap = maxZ > b.minZ && minZ < b.maxZ;
+
+        if (xOverlap && yOverlap && zOverlap) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function findStandingBlock() {
+      for (const block of placedBlocks) {
+        const b = blockAABB(block);
+        const xOverlap = player.pos.x + player.radius > b.minX && player.pos.x - player.radius < b.maxX;
+        const zOverlap = player.pos.z + player.radius > b.minZ && player.pos.z - player.radius < b.maxZ;
+
+        if (
+          xOverlap &&
+          zOverlap &&
+          player.pos.y + player.height <= b.maxY + 0.15 &&
+          player.pos.y + player.height >= b.maxY - 0.3
+        ) {
+          return b.maxY;
+        }
+      }
+      return null;
+    }
+
+    function updatePlayer(dt) {
+      const arrowTurnSpeed = 2.2;
+      const arrowPitchSpeed = 1.5;
+
+      if (arrowKeys.left) player.yaw += arrowTurnSpeed * dt;
+      if (arrowKeys.right) player.yaw -= arrowTurnSpeed * dt;
+      if (arrowKeys.up) player.pitch -= arrowPitchSpeed * dt;
+      if (arrowKeys.down) player.pitch += arrowPitchSpeed * dt;
+
+      player.pitch = THREE.MathUtils.clamp(player.pitch, -1.45, 1.45);
+
+      let inputX = 0;
+      let inputZ = 0;
+
+      if (keys.w) inputZ -= 1;
+      if (keys.s) inputZ += 1;
+      if (keys.a) inputX -= 1;
+      if (keys.d) inputX += 1;
+
+      if (leftTouchId !== null) {
+        inputX += leftState.x / 34;
+        inputZ += leftState.y / 34;
+      }
+
+      if (inputX !== 0 || inputZ !== 0) {
+        const len = Math.hypot(inputX, inputZ);
+        inputX /= len;
+        inputZ /= len;
+      }
+
+      const forward = new THREE.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw));
+      const right = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
+
+      const move = new THREE.Vector3();
+      move.addScaledVector(forward, -inputZ);
+      move.addScaledVector(right, inputX);
+
+      if (move.lengthSq() > 0) {
+        move.normalize().multiplyScalar(player.speed * dt);
+      } else {
+        move.set(0, 0, 0);
+      }
+
+      const prevY = player.pos.y;
+
+      const nextX = player.pos.x + move.x;
+      if (!playerIntersectsBlockAt(nextX, player.pos.y, player.pos.z)) {
+        player.pos.x = nextX;
+      }
+
+      const nextZ = player.pos.z + move.z;
+      if (!playerIntersectsBlockAt(player.pos.x, player.pos.y, nextZ)) {
+        player.pos.z = nextZ;
+      }
+
+      if (jumpQueued && (player.onGround || player.standingOnBlockTop !== null)) {
+        player.velocityY = 7.8;
+        player.onGround = false;
+        player.standingOnBlockTop = null;
+      }
+      jumpQueued = false;
+
+      player.velocityY -= 19.5 * dt;
+      const desiredY = player.pos.y + player.velocityY * dt;
+
+      let landedOnBlock = false;
+      player.standingOnBlockTop = null;
+
+      for (const block of placedBlocks) {
+        const b = blockAABB(block);
+        const xOverlap = player.pos.x + player.radius > b.minX && player.pos.x - player.radius < b.maxX;
+        const zOverlap = player.pos.z + player.radius > b.minZ && player.pos.z - player.radius < b.maxZ;
+
+        if (!xOverlap || !zOverlap) continue;
+
+        const top = b.maxY;
+        const prevFeet = prevY;
+        const nextFeet = desiredY;
+
+        if (
+          player.velocityY <= 0 &&
+          prevFeet + player.height <= top + 0.14 &&
+          prevFeet >= top - 1.1 &&
+          nextFeet + player.height >= top
+        ) {
+          player.pos.y = top - player.height;
+          player.velocityY = 0;
+          player.onGround = true;
+          player.standingOnBlockTop = top;
+          landedOnBlock = true;
+          break;
+        }
+      }
+
+      if (!landedOnBlock) {
+        player.pos.y = desiredY;
+
+        if (player.pos.y < 0) {
+          player.pos.y = 0;
+          player.velocityY = 0;
+          player.onGround = true;
+          player.standingOnBlockTop = null;
+        } else {
+          const top = findStandingBlock();
+          if (top !== null) {
+            player.pos.y = top - player.height;
+            player.velocityY = 0;
+            player.onGround = true;
+            player.standingOnBlockTop = top;
+          } else {
+            player.onGround = false;
+            player.standingOnBlockTop = null;
+          }
+        }
+      }
+
+      if (player.pos.y <= 0) {
+        player.pos.y = 0;
+        player.velocityY = 0;
+        player.onGround = true;
+        player.standingOnBlockTop = null;
+      }
+
+      player.pos.x = THREE.MathUtils.clamp(player.pos.x, -35, 35);
+      player.pos.z = THREE.MathUtils.clamp(player.pos.z, -35, 35);
+
+      if (player.attackCooldown > 0) {
+        player.attackCooldown -= dt;
+      }
+      if (player.hitFlash > 0) {
+        player.hitFlash -= dt;
+      }
+
+      if (swordSwingTimer > 0) {
+        swordSwingTimer = Math.max(0, swordSwingTimer - dt);
+      }
+
+      updateCamera();
+      updatePlayerHealthUI();
+    }
+
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+
+    function getPointerFromClient(clientX, clientY) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    }
+
+    function setBlockDimensions(block, sizeX, sizeY, sizeZ) {
+      const size = {
+        x: Math.max(0.5, sizeX),
+        y: Math.max(0.5, sizeY),
+        z: Math.max(0.5, sizeZ)
+      };
+
+      block.userData.size = size;
+
+      const newGeom = new THREE.BoxGeometry(size.x, size.y, size.z);
+      block.geometry.dispose();
+      block.geometry = newGeom;
+    }
+
+    function resizeSelectedBlock(axis, direction) {
+      const step = 0.5;
+      const sign = direction === 'up' || direction === 'right' || direction === 'forward' ? 1 : -1;
+
+      if (!selectedBlock) return;
+
+      const current = selectedBlock.userData.size || {
+        x: selectedBlock.userData.isLazar ? 1 : blockSize,
+        y: selectedBlock.userData.isLazar ? slabHeight : blockSize,
+        z: selectedBlock.userData.isLazar ? 1 : blockSize
+      };
+
+      if (axis === 'x') {
+        const next = current.x + step * sign;
+        selectedBlock.position.x += (step * sign) / 2;
+        setBlockDimensions(selectedBlock, next, current.y, current.z);
+      } else if (axis === 'y') {
+        const next = current.y + step * sign;
+        selectedBlock.position.y += (step * sign) / 2;
+        setBlockDimensions(selectedBlock, current.x, next, current.z);
+      } else if (axis === 'z') {
+        const next = current.z + step * sign;
+        selectedBlock.position.z += (step * sign) / 2;
+        setBlockDimensions(selectedBlock, current.x, current.y, next);
+      }
+    }
+
+    function spawnSlashEffect(position) {
+      const mesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.1, 1.1),
+        slashEffectMaterial.clone()
+      );
+      mesh.position.copy(position);
+      mesh.position.y += 1.1;
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.rotation.z = Math.random() * 1.2 - 0.6;
+      mesh.scale.setScalar(0.4);
+      scene.add(mesh);
+
+      slashEffects.push({
+        mesh,
+        life: 0.18,
+        maxLife: 0.18,
+        velocity: 0
+      });
+    }
+
+    function addBlockAtHit(hit, isLazar = false) {
+      if (!hit || !hit.face) return;
+
+      const faceNormal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize();
+
+      let testY = blockHalf;
+      if (hit.object.userData.isFloor) {
+        testY = blockHalf;
+      } else if (hit.object.userData.isBlock || hit.object.userData.isLazar || hit.object.userData.isSpawnPoint) {
+        if (faceNormal.y > 0.5) {
+          const targetHeight = hit.object.userData.isLazar ? slabHeight : (hit.object.userData.size?.y || blockSize);
+          testY = hit.object.position.y + targetHeight / 2 + (isLazar ? slabHalf : blockHalf);
+        } else {
+          return;
+        }
+      }
+
+      const testPos = new THREE.Vector3(
+        Math.round(hit.point.x / blockSize) * blockSize,
+        testY,
+        Math.round(hit.point.z / blockSize) * blockSize
+      );
+
+      if (hit.object.userData.isFloor) {
+        testPos.y = isLazar ? slabHalf : blockHalf;
+      }
+
+      const overlaps = placedBlocks.some((block) => {
+        const b = blockAABB(block);
+        const minX = testPos.x - blockHalf;
+        const maxX = testPos.x + blockHalf;
+        const minY = testPos.y - (isLazar ? slabHalf : blockHalf);
+        const maxY = testPos.y + (isLazar ? slabHalf : blockHalf);
+        const minZ = testPos.z - blockHalf;
+        const maxZ = testPos.z + blockHalf;
+
+        return maxX > b.minX && minX < b.maxX && maxY > b.minY && minY < b.maxY && maxZ > b.minZ && minZ < b.maxZ;
+      });
+
+      if (overlaps) return;
+
+      let block;
+      if (isLazar) {
+        const material = createLazarMaterial(selectedBlockColor);
+        block = new THREE.Mesh(slabGeometry, material);
+        const glowLight = new THREE.PointLight(new THREE.Color(selectedBlockColor), 1.8, 5.5, 2);
+        glowLight.position.set(0, 0.2, 0);
+        block.add(glowLight);
+        block.userData.isLazar = true;
+        block.userData.size = { x: 1, y: slabHeight, z: 1 };
+      } else {
+        const blockMaterial = new THREE.MeshStandardMaterial({
+          map: blockTexture,
+          color: new THREE.Color(selectedBlockColor),
+          roughness: 0.96,
+          metalness: 0.02
+        });
+        block = new THREE.Mesh(blockGeometry, blockMaterial);
+        block.userData.size = { x: blockSize, y: blockSize, z: blockSize };
+      }
+
+      block.position.copy(testPos);
+      block.castShadow = true;
+      block.receiveShadow = true;
+      block.userData.isBlock = true;
+      scene.add(block);
+      placedBlocks.push(block);
+      selectedBlock = block;
+    }
+
+    function placeLazarAtHit(hit) {
+      addBlockAtHit(hit, true);
+    }
+
+    function removeBlockAtHit(hit) {
+      if (!hit || !hit.object || !hit.object.userData.isBlock) return;
+
+      const idx = placedBlocks.indexOf(hit.object);
+      if (idx !== -1) placedBlocks.splice(idx, 1);
+
+      if (selectedBlock === hit.object) {
+        selectedBlock = null;
+      }
+
+      if (hit.object.userData.isSpawnPoint) {
+        if (spawnPoint && spawnPoint === hit.object) {
+          spawnPoint = null;
+        }
+      }
+
+      scene.remove(hit.object);
+      hit.object.geometry.dispose();
+
+      if (hit.object.material && !Array.isArray(hit.object.material)) {
+        hit.object.material.dispose();
+      }
+
+      if (hit.object.children) {
+        hit.object.children.forEach((child) => {
+          if (child.isPointLight) {
+            child.dispose?.();
+          }
+        });
+      }
+    }
+
+    function createSpawnPointMesh(position) {
+      const group = new THREE.Group();
+
+      const slab = new THREE.Mesh(
+        new THREE.BoxGeometry(1.5, 0.4, 1.5),
+        new THREE.MeshStandardMaterial({
+          color: 0x2b2d33,
+          roughness: 0.72,
+          metalness: 0.14
+        })
+      );
+      slab.position.y = 0.2;
+      group.add(slab);
+
+      const glowRing = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.55, 0.55, 0.12, 32),
+        new THREE.MeshStandardMaterial({
+          color: 0xf8f8fa,
+          emissive: 0xffffff,
+          emissiveIntensity: 0.8,
+          roughness: 0.2,
+          metalness: 0.4
+        })
+      );
+      glowRing.position.y = 0.52;
+      group.add(glowRing);
+
+      const markerTexture = makeSpawnMarkerTexture();
+      const marker = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.9, 0.9),
+        new THREE.MeshStandardMaterial({
+          map: markerTexture,
+          transparent: true,
+          emissive: 0xff2a4f,
+          emissiveMap: markerTexture,
+          emissiveIntensity: 1.1
+        })
+      );
+      marker.position.y = 0.64;
+      marker.rotation.x = -Math.PI / 2;
+      group.add(marker);
+
+      group.position.copy(position);
+      group.userData.isBlock = true;
+      group.userData.isSpawnPoint = true;
+      group.userData.size = { x: 1.5, y: 0.4, z: 1.5 };
+      return group;
+    }
+
+    let spawnPoint = null;
+
+    function removeSpawnPoint() {
+      if (!spawnPoint) return;
+      if (selectedBlock === spawnPoint) selectedBlock = null;
+      scene.remove(spawnPoint);
+      spawnPoint = null;
+      setStatus('Creative');
+    }
+
+    function placeSpawnPointAtHit(hit) {
+      if (!hit) return;
+
+      const pos = hit.point.clone();
+      const spawnHalf = 0.2;
+
+      if (hit.object.userData.isFloor) {
+        pos.y = 0.2;
+      } else if (hit.object.userData.isBlock || hit.object.userData.isLazar || hit.object.userData.isSpawnPoint) {
+        const targetHeight = hit.object.userData.size?.y || (hit.object.userData.isLazar ? slabHeight : blockSize);
+        pos.y = hit.object.position.y + targetHeight / 2 + spawnHalf + 0.02;
+      }
+
+      const finalPos = new THREE.Vector3(
+        Math.round(pos.x / blockSize) * blockSize,
+        pos.y,
+        Math.round(pos.z / blockSize) * blockSize
+      );
+
+      if (spawnPoint) {
+        removeSpawnPoint();
+      }
+
+      const spawnMesh = createSpawnPointMesh(finalPos);
+      scene.add(spawnMesh);
+      spawnPoint = spawnMesh;
+      setStatus('Spawn Point Ready');
+    }
+
+    function createZombieMesh(position) {
+      const root = new THREE.Group();
+
+      const skinMaterial = new THREE.MeshStandardMaterial({
+        color: 0x6dbf64,
+        roughness: 0.9
+      });
+
+      const darkMaterial = new THREE.MeshStandardMaterial({
+        color: 0x2a5c34,
+        roughness: 0.9
+      });
+
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.2, 0.4), skinMaterial);
+      body.position.y = 1.05;
+      root.add(body);
+
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.52, 0.52), skinMaterial);
+      head.position.y = 2.05;
+      root.add(head);
+
+      const eyeGeo = new THREE.BoxGeometry(0.06, 0.10, 0.02);
+      const eyeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+      const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+      const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+      leftEye.position.set(-0.12, 2.12, 0.28);
+      rightEye.position.set(0.12, 2.12, 0.28);
+      root.add(leftEye, rightEye);
+
+      const legGeo = new THREE.BoxGeometry(0.22, 0.7, 0.22);
+      const leftLeg = new THREE.Mesh(legGeo, darkMaterial);
+      const rightLeg = new THREE.Mesh(legGeo, darkMaterial);
+      leftLeg.position.set(-0.16, 0.35, 0);
+      rightLeg.position.set(0.16, 0.35, 0);
+      root.add(leftLeg, rightLeg);
+
+      const armGeo = new THREE.BoxGeometry(0.18, 0.7, 0.18);
+      const leftArm = new THREE.Mesh(armGeo, skinMaterial);
+      const rightArm = new THREE.Mesh(armGeo, skinMaterial);
+      leftArm.position.set(-0.52, 1.1, 0);
+      rightArm.position.set(0.52, 1.1, 0);
+      root.add(leftArm, rightArm);
+
+      const hpBg = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.2, 0.16),
+        new THREE.MeshBasicMaterial({ color: 0x3a0909, transparent: true, opacity: 0.9 })
+      );
+      hpBg.position.set(0, 2.9, 0);
+
+      const hpFill = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.1, 0.12),
+        new THREE.MeshBasicMaterial({ color: 0xff2d2d, transparent: true, opacity: 0.98 })
+      );
+      hpFill.position.set(0, 2.9, 0.02);
+
+      root.add(hpBg, hpFill);
+      root.position.copy(position);
+      root.castShadow = true;
+      root.receiveShadow = true;
+      root.userData.isZombie = true;
+
+      return {
+        mesh: root,
+        hp: 2,
+        maxHp: 2,
+        speed: 1.55 + Math.random() * 0.7,
+        radius: 0.46,
+        damageCooldown: 0,
+        hpFill,
+        spawnPoint: position.clone()
+      };
+    }
+
+    function updateZombieHealthBar(zombie) {
+      const ratio = THREE.MathUtils.clamp(zombie.hp / zombie.maxHp, 0, 1);
+      zombie.hpFill.scale.x = ratio;
+      zombie.hpFill.position.x = -0.55 + 0.55 * ratio;
+    }
+
+    function zombieIntersectsBlockAt(zombie, x, z) {
+      const minX = x - zombie.radius;
+      const maxX = x + zombie.radius;
+      const minZ = z - zombie.radius;
+      const maxZ = z + zombie.radius;
+
+      for (const block of placedBlocks) {
+        const b = blockAABB(block);
+
+        const xOverlap = maxX > b.minX && minX < b.maxX;
+        const zOverlap = maxZ > b.minZ && minZ < b.maxZ;
+        const yOverlap = zombie.mesh.position.y + 1.9 > b.minY && zombie.mesh.position.y < b.maxY;
+
+        if (xOverlap && zOverlap && yOverlap) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function removeZombie(zombie) {
+      const index = zombies.indexOf(zombie);
+      if (index !== -1) zombies.splice(index, 1);
+
+      const templateIndex = zombieTemplates.findIndex((item) => {
+        return item.position.distanceTo(zombie.spawnPoint) < 0.001;
+      });
+
+      if (templateIndex !== -1) {
+        zombieTemplates.splice(templateIndex, 1);
+      }
+
+      scene.remove(zombie.mesh);
+    }
+
+    function resetZombiesToSpawn() {
+      for (const zombie of zombies.slice()) {
+        scene.remove(zombie.mesh);
+      }
+      zombies.length = 0;
+
+      for (const template of zombieTemplates) {
+        const zombie = createZombieMesh(template.position.clone());
+        zombies.push(zombie);
+        scene.add(zombie.mesh);
+        updateZombieHealthBar(zombie);
+      }
+    }
+
+    function removeZombieFromHit(hit) {
+      if (!hit || !hit.object || !hit.object.userData.isZombie) return;
+      const zombie = zombies.find((z) => z.mesh === hit.object);
+      if (zombie) removeZombie(zombie);
+    }
+
+    function placeZombieAtHit(hit) {
+      if (!hit || (!hit.object.userData.isFloor && !hit.object.userData.isBlock && !hit.object.userData.isSpawnPoint)) return;
+
+      const pos = hit.point.clone();
+
+      if (hit.object.userData.isFloor) {
+        pos.y = 0;
+      } else if (hit.object.userData.isBlock || hit.object.userData.isLazar || hit.object.userData.isSpawnPoint) {
+        pos.y = hit.object.position.y + (hit.object.userData.size?.y || blockSize) / 2 + 0.4;
+      }
+
+      const spawn = new THREE.Vector3(
+        Math.round(pos.x / blockSize) * blockSize,
+        pos.y,
+        Math.round(pos.z / blockSize) * blockSize
+      );
+
+      const zombie = createZombieMesh(spawn);
+      zombieTemplates.push({ position: spawn.clone() });
+      zombies.push(zombie);
+      scene.add(zombie.mesh);
+      updateZombieHealthBar(zombie);
+    }
+
+    function performSwordSwing(targetPoint = null) {
+      if (player.attackCooldown > 0) return;
+
+      player.attackCooldown = 0.38;
+      swordSwingTimer = SWING_DURATION;
+
+      let attackPoint;
+
+      if (targetPoint) {
+        attackPoint = targetPoint.clone();
+      } else {
+        const dir = new THREE.Vector3();
+        camera.getWorldDirection(dir);
+        attackPoint = player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)).add(dir.multiplyScalar(2.6));
+      }
+
+      const attackRadius = 1.8;
+
+      for (const zombie of zombies.slice()) {
+        const zombiePos = zombie.mesh.position;
+        const dist = zombiePos.distanceTo(attackPoint);
+
+        if (dist <= attackRadius) {
+          zombie.hp -= 1;
+          spawnSlashEffect(zombiePos.clone());
+          updateZombieHealthBar(zombie);
+
+          if (zombie.hp <= 0) {
+            removeZombie(zombie);
+          }
+        }
+      }
+    }
+
+    function damagePlayer(amount) {
+      if (player.hitFlash > 0) return;
+
+      player.health -= amount;
+      player.hitFlash = 0.5;
+
+      if (player.health <= 0) {
+        player.health = player.maxHealth;
+        if (spawnPoint) {
+          player.pos.set(spawnPoint.position.x, spawnPoint.position.y + 0.4, spawnPoint.position.z);
+        } else {
+          player.pos.set(0, 0, 12);
+        }
+        player.velocityY = 0;
+      }
+
+      updatePlayerHealthUI();
+    }
+
+    let selectedBlock = null;
+
+    function handlePlaceOrErase(clientX, clientY) {
+      if (isUiPointer(clientX, clientY)) return;
+
+      getPointerFromClient(clientX, clientY);
+      raycaster.setFromCamera(pointer, camera);
+
+      const hitTargets = [
+        floor,
+        ...placedBlocks,
+        ...zombies.map((z) => z.mesh)
+      ];
+
+      const hits = raycaster.intersectObjects(hitTargets, false);
+      if (!hits.length) return;
+
+      const hit = hits[0];
+
+      if (hit.object.userData.isSpawnPoint) {
+        selectedBlock = hit.object;
+        return;
+      }
+
+      if (eraserMode) {
+        if (hit.object.userData.isZombie) {
+          removeZombieFromHit(hit);
+        } else if (hit.object.userData.isBlock) {
+          removeBlockAtHit(hit);
+        }
+        return;
+      }
+
+      if (placementMode === 'zombie') {
+        placeZombieAtHit(hit);
+        return;
+      }
+
+      if (placementMode === 'lazar') {
+        placeLazarAtHit(hit);
+        return;
+      }
+
+      if (placementMode === 'spawn') {
+        placeSpawnPointAtHit(hit);
+        return;
+      }
+
+      addBlockAtHit(hit);
+    }
+
+    renderer.domElement.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      if (isUiPointer(event.clientX, event.clientY)) return;
+      event.preventDefault();
+
+      if (playMode) {
+        getPointerFromClient(event.clientX, event.clientY);
+        raycaster.setFromCamera(pointer, camera);
+
+        const hitTargets = [
+          floor,
+          ...placedBlocks,
+          ...zombies.map((z) => z.mesh)
+        ];
+
+        const hits = raycaster.intersectObjects(hitTargets, false);
+        let targetPoint = null;
+
+        if (hits.length) {
+          targetPoint = hits[0].point.clone();
+        } else {
+          const dir = new THREE.Vector3();
+          camera.getWorldDirection(dir);
+          targetPoint = player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)).add(dir.multiplyScalar(3.5));
+        }
+
+        performSwordSwing(targetPoint);
+        return;
+      }
+
+      getPointerFromClient(event.clientX, event.clientY);
+      raycaster.setFromCamera(pointer, camera);
+
+      const hitTargets = [
+        floor,
+        ...placedBlocks,
+        ...zombies.map((z) => z.mesh)
+      ];
+
+      const hits = raycaster.intersectObjects(hitTargets, false);
+
+      if (hits.length > 0 && hits[0].object.userData.isBlock) {
+        selectedBlock = hits[0].object;
+        return;
+      }
+
+      handlePlaceOrErase(event.clientX, event.clientY);
+    });
+
+    renderer.domElement.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+    });
+
+    document.querySelectorAll('.resize-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const axis = btn.dataset.axis;
+        const dir = btn.dataset.dir;
+        resizeSelectedBlock(axis, dir);
+      });
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'].includes(e.code)) {
+        e.preventDefault();
+      }
+
+      if (e.code === 'KeyP') {
+        if (!playMode && !spawnPoint) {
+          setStatus('Need a Spawn Point');
+          return;
+        }
+
+        const enteringPlay = !playMode;
+        playMode = !playMode;
+        updateModeButton();
+
+        if (playMode) {
+          if (spawnPoint) {
+            player.pos.set(
+              spawnPoint.position.x,
+              spawnPoint.position.y + 0.4,
+              spawnPoint.position.z
+            );
+            player.velocityY = 0;
+            player.onGround = true;
+            player.standingOnBlockTop = null;
+            setStatus('Spawned');
+          }
+        } else {
+          setStatus('Creative');
+        }
+
+        if (!enteringPlay) {
+          resetZombiesToSpawn();
+        }
+      }
+
+      if (e.code === 'KeyE') {
+        if (!playMode) {
+          eraserMode = !eraserMode;
+          updateEraserButton();
+        }
+      }
+      if (e.code === 'Space') jumpQueued = true;
+
+      if (e.code === 'KeyW') keys.w = true;
+      if (e.code === 'KeyS') keys.s = true;
+      if (e.code === 'KeyA') keys.a = true;
+      if (e.code === 'KeyD') keys.d = true;
+
+      if (e.code === 'ArrowLeft') arrowKeys.left = true;
+      if (e.code === 'ArrowRight') arrowKeys.right = true;
+      if (e.code === 'ArrowUp') arrowKeys.up = true;
+      if (e.code === 'ArrowDown') arrowKeys.down = true;
+    });
+
+    document.addEventListener('keyup', (e) => {
+      if (e.code === 'KeyW') keys.w = false;
+      if (e.code === 'KeyS') keys.s = false;
+      if (e.code === 'KeyA') keys.a = false;
+      if (e.code === 'KeyD') keys.d = false;
+
+      if (e.code === 'ArrowLeft') arrowKeys.left = false;
+      if (e.code === 'ArrowRight') arrowKeys.right = false;
+      if (e.code === 'ArrowUp') arrowKeys.up = false;
+      if (e.code === 'ArrowDown') arrowKeys.down = false;
+    });
+
+    let mouseDown = false;
+    let lastMouseX = 0;
+    let lastMouseY = 0;
+
+    window.addEventListener('mousedown', (e) => {
+      if (window.innerWidth <= 768) return;
+      mouseDown = true;
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!mouseDown || window.innerWidth <= 768) return;
+      const dx = e.clientX - lastMouseX;
+      const dy = e.clientY - lastMouseY;
+      player.yaw -= dx * 0.003;
+      player.pitch -= dy * 0.002;
+      player.pitch = THREE.MathUtils.clamp(player.pitch, -1.45, 1.45);
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+    });
+
+    window.addEventListener('mouseup', () => {
+      mouseDown = false;
+    });
+
+    const leftJoystick = document.getElementById('leftJoystick');
+    const lookPad = document.getElementById('lookPad');
+    const leftStick = leftJoystick.querySelector('.stick');
+    const lookDot = lookPad.querySelector('.dot');
+
+    let leftTouchId = null;
+    let rightTouchId = null;
+    const leftState = { x: 0, y: 0 };
+    const lookState = { x: 0, y: 0 };
+
+    function setStickPosition(stickEl, x, y, maxRadius = 34) {
+      const length = Math.hypot(x, y);
+      const clamped = Math.min(length, maxRadius);
+      const angle = Math.atan2(y, x);
+      const posX = Math.cos(angle) * clamped;
+      const posY = Math.sin(angle) * clamped;
+      stickEl.style.transform = `translate(${posX}px, ${posY}px)`;
+    }
+
+    function handleTouchStart(event) {
+      const jumpRect = jumpButton.getBoundingClientRect();
+
+      if (isInsideRect(event.touches[0].clientX, event.touches[0].clientY, jumpRect)) {
+        event.preventDefault();
+        queueJump();
+        return;
+      }
+
+      const t = event.touches[0];
+      const rect = leftJoystick.getBoundingClientRect();
+      const lookRect = lookPad.getBoundingClientRect();
+
+      if (!leftTouchId && isInsideRect(t.clientX, t.clientY, rect)) {
+        leftTouchId = t.identifier;
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = t.clientX - cx;
+        const dy = t.clientY - cy;
+        leftState.x = dx;
+        leftState.y = dy;
+        setStickPosition(leftStick, dx, dy, 34);
+        return;
+      }
+
+      if (!rightTouchId && isInsideRect(t.clientX, t.clientY, lookRect)) {
+        rightTouchId = t.identifier;
+        return;
+      }
+
+      if (leftTouchId === null && rightTouchId === null) {
+        if (isUiPointer(t.clientX, t.clientY)) return;
+
+        if (playMode) {
+          getPointerFromClient(t.clientX, t.clientY);
+          raycaster.setFromCamera(pointer, camera);
+          const hitTargets = [
+            floor,
+            ...placedBlocks,
+            ...zombies.map((z) => z.mesh)
+          ];
+          const hits = raycaster.intersectObjects(hitTargets, false);
+          let targetPoint = null;
+
+          if (hits.length) {
+            targetPoint = hits[0].point.clone();
+          } else {
+            const dir = new THREE.Vector3();
+            camera.getWorldDirection(dir);
+            targetPoint = player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)).add(dir.multiplyScalar(3.5));
+          }
+
+          performSwordSwing(targetPoint);
+          return;
+        }
+
+        getPointerFromClient(t.clientX, t.clientY);
+        raycaster.setFromCamera(pointer, camera);
+
+        const hitTargets = [
+          floor,
+          ...placedBlocks,
+          ...zombies.map((z) => z.mesh)
+        ];
+
+        const hits = raycaster.intersectObjects(hitTargets, false);
+
+        if (hits.length > 0 && hits[0].object.userData.isBlock) {
+          selectedBlock = hits[0].object;
+          return;
+        }
+
+        handlePlaceOrErase(t.clientX, t.clientY);
+      }
+    }
+
+    function handleTouchMove(event) {
+      for (let i = 0; i < event.touches.length; i++) {
+        const touch = event.touches[i];
+
+        if (touch.identifier === leftTouchId) {
+          const rect = leftJoystick.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const cy = rect.top + rect.height / 2;
+          const dx = touch.clientX - cx;
+          const dy = touch.clientY - cy;
+          const r = 34;
+          const len = Math.hypot(dx, dy);
+          const clamped = Math.min(len, r);
+          const angle = Math.atan2(dy, dx);
+          leftState.x = Math.cos(angle) * clamped;
+          leftState.y = Math.sin(angle) * clamped;
+          setStickPosition(leftStick, leftState.x, leftState.y, r);
+        }
+
+        if (touch.identifier === rightTouchId) {
+          const rect = lookPad.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const cy = rect.top + rect.height / 2;
+          const dx = touch.clientX - cx;
+          const dy = touch.clientY - cy;
+          const max = 42;
+          const len = Math.hypot(dx, dy);
+          const clamped = Math.min(len, max);
+          const angle = Math.atan2(dy, dx);
+          lookState.x = Math.cos(angle) * clamped;
+          lookState.y = Math.sin(angle) * clamped;
+          setStickPosition(lookDot, lookState.x, lookState.y, max);
+          player.yaw -= dx * 0.004;
+          player.pitch -= dy * 0.003;
+          player.pitch = THREE.MathUtils.clamp(player.pitch, -1.5, 1.5);
+        }
+      }
+    }
+
+    function handleTouchEnd(event) {
+      for (let i = 0; i < event.changedTouches.length; i++) {
+        const touch = event.changedTouches[i];
+        if (touch.identifier === leftTouchId) {
+          leftTouchId = null;
+          leftState.x = 0;
+          leftState.y = 0;
+          leftStick.style.transform = 'translate(-50%, -50%)';
+        }
+        if (touch.identifier === rightTouchId) {
+          rightTouchId = null;
+          lookState.x = 0;
+          lookState.y = 0;
+          lookDot.style.transform = 'translate(-50%, -50%)';
+        }
+      }
+    }
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: false });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd, { passive: false });
+    window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
+    updateModeButton();
+    updateEraserButton();
+    updateCamera();
+    updatePlayerHealthUI();
+    setSelectedTool('sword');
+    setStatus('Creative');
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+      const dt = clock.getDelta();
+      updatePlayer(dt);
+
+      for (let i = slashEffects.length - 1; i >= 0; i--) {
+        const effect = slashEffects[i];
+        effect.life -= dt;
+        effect.mesh.scale.x = THREE.MathUtils.lerp(effect.mesh.scale.x, 1.3, 0.18);
+        effect.mesh.scale.y = THREE.MathUtils.lerp(effect.mesh.scale.y, 1.1, 0.18);
+
+        const alpha = Math.max(0, effect.life / effect.maxLife);
+        const material = effect.mesh.material;
+        material.opacity = alpha;
+
+        if (effect.life <= 0) {
+          scene.remove(effect.mesh);
+          effect.mesh.material.dispose();
+          slashEffects.splice(i, 1);
+        }
+      }
+
+      if (playMode) {
+        for (const zombie of zombies) {
+          const dx = player.pos.x - zombie.mesh.position.x;
+          const dz = player.pos.z - zombie.mesh.position.z;
+          const dist = Math.hypot(dx, dz);
+
+          if (dist > 0.01) {
+            const dirX = dx / dist;
+            const dirZ = dz / dist;
+
+            const nextX = zombie.mesh.position.x + dirX * zombie.speed * dt;
+            const nextZ = zombie.mesh.position.z + dirZ * zombie.speed * dt;
+
+            if (!zombieIntersectsBlockAt(zombie, nextX, zombie.mesh.position.z)) {
+              zombie.mesh.position.x = nextX;
+            }
+
+            if (!zombieIntersectsBlockAt(zombie, zombie.mesh.position.x, nextZ)) {
+              zombie.mesh.position.z = nextZ;
+            }
+
+            zombie.mesh.rotation.y = Math.atan2(dirX, dirZ);
+          }
+
+          if (zombie.damageCooldown > 0) {
+            zombie.damageCooldown -= dt;
+          }
+
+          const playerDx = player.pos.x - zombie.mesh.position.x;
+          const playerDz = player.pos.z - zombie.mesh.position.z;
+          const playerDistance = Math.hypot(playerDx, playerDz);
+
+          if (playerDistance < 1.3 && zombie.damageCooldown <= 0) {
+            damagePlayer(1);
+            zombie.damageCooldown = 1.2;
+          }
+
+          zombie.mesh.position.y = 0;
+          zombie.hpFill.lookAt(camera.position);
+        }
+      }
+
+      if (swordSwingTimer > 0) {
+        const swing = Math.sin((1 - swordSwingTimer / SWING_DURATION) * Math.PI);
+        weapon.rotation.y = 0.22 + swing * 0.9;
+        weapon.rotation.z = -0.9 - swing * 1.4;
+      } else {
+        weapon.rotation.y = 0.22 + Math.sin(performance.now() * 0.003) * 0.04;
+        weapon.rotation.z = -0.9 + Math.sin(performance.now() * 0.0025) * 0.03;
+      }
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
